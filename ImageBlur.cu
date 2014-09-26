@@ -18,15 +18,6 @@ unsigned char *d_img  = NULL;
 #define BLOCK_WIDTH		64
 #define BLOCK_HEIGHT	16
 
-#ifndef __CUDA_ARCH__
-#ifdef WIN32
-#pragma message ("__CUDA_ARCH__ undefined")
-#else
-#warning "__CUDA_ARCH__ undefined"
-#endif
-#endif 
-
-
 //////////////////////////////////////
 /// Radial blur using global memory
 //////////////////////////////////////
