@@ -18,6 +18,10 @@ unsigned char *d_img  = NULL;
 #define BLOCK_WIDTH		32
 #define BLOCK_HEIGHT	32
 
+// Uncomment the line below to compile 
+// the kernel using CUDA Texture Object
+// It works only on graphics cards with Compute Model >= 3.0  
+
 //#define USE_TEXTURE_OBJECT
 
 
