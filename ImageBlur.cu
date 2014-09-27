@@ -20,7 +20,7 @@ unsigned char *d_img  = NULL;
 
 // Uncomment the line below to compile 
 // the kernel using CUDA Texture Object
-// It works only on graphics cards with Compute Model >= 3.0  
+// It works only on graphics cards with Compute Capability >= 3.0  
 
 //#define USE_TEXTURE_OBJECT
 
