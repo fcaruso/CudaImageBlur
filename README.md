@@ -9,5 +9,4 @@ To compile the source you have just to:
 2.  Add the file imageBlur.cu 
 3.  Add the CUDA Sample/common/inc directory to the include directory search path 
 
-Enjoy!
 
