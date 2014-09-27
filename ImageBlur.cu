@@ -15,8 +15,11 @@ unsigned int width, height;
 unsigned char *h_img  = NULL;
 unsigned char *d_img  = NULL;
 
-#define BLOCK_WIDTH		64
-#define BLOCK_HEIGHT	16
+#define BLOCK_WIDTH		32
+#define BLOCK_HEIGHT	32
+
+//#define USE_TEXTURE_OBJECT
+
 
 //////////////////////////////////////
 /// Radial blur using global memory
@@ -103,6 +106,7 @@ __global__ void kRadialBlur( unsigned char* img, unsigned width, unsigned height
 			
 }
 
+#ifdef USE_TEXTURE_OBJECT
 //////////////////////////////////////
 /// Radial blur using texture memory
 //////////////////////////////////////
@@ -111,7 +115,7 @@ template<unsigned short RADIUS>
 __global__ void kRadialBlur( unsigned char* img, cudaTextureObject_t tex,
 							unsigned width, unsigned height, size_t pitch)
 {
-	__shared__unsigned char sh[BLOCK_HEIGHT + 2*RADIUS][BLOCK_WIDTH + 2*RADIUS];
+	__shared__ unsigned char sh[BLOCK_HEIGHT + 2*RADIUS][BLOCK_WIDTH + 2*RADIUS];
 
 	int g_x = blockDim.x*blockIdx.x + threadIdx.x;
 	int g_y = blockDim.y*blockIdx.y + threadIdx.y;
@@ -140,7 +144,7 @@ __global__ void kRadialBlur( unsigned char* img, cudaTextureObject_t tex,
 	}
 	if ( ( threadIdx.x > ( BLOCK_WIDTH -1 - RADIUS ) ) && ( g_x < ( width - RADIUS ) ) )
 	{
-		sh[pid_y][pid_x + RADIUS ] = tex2D<T>(tex, g_x + RADIUS, g_y );
+		sh[pid_y][pid_x + RADIUS ] = tex2D<unsigned char>(tex, g_x + RADIUS, g_y );
 
 		if ( ( threadIdx.y < RADIUS ) && ( g_y > RADIUS ) )
 		{
@@ -189,6 +193,7 @@ __global__ void kRadialBlur( unsigned char* img, cudaTextureObject_t tex,
 	img[ g_y*pitch + g_x ] = (unsigned char) val;
 			
 }
+#endif // USE_TEXTURE_OBJECT
 
 int main(int argc, char* argv[])
 {
@@ -210,6 +215,7 @@ int main(int argc, char* argv[])
 			h_img, width*sizeof(unsigned char), width*sizeof(unsigned char), height, 
 			cudaMemcpyHostToDevice );
 
+#ifdef USE_TEXTURE_OBJECT
 	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc<unsigned char>();
 	cudaArray* cuArray;
 	cudaMallocArray(&cuArray, &channelDesc, width, height);
@@ -232,6 +238,7 @@ int main(int argc, char* argv[])
 
 	cudaTextureObject_t texObj = 0;
 	cudaCreateTextureObject( &texObj, &resDesc, &texDesc, NULL );
+#endif // USE_TEXTURE_OBJECT
 
 	// create vars for timing
 	cudaEvent_t startEvent, stopEvent;
@@ -254,7 +261,7 @@ int main(int argc, char* argv[])
 	cudaEventElapsedTime( &elapsedTime, startEvent, stopEvent);
 
 	printf("elapsed time of version using global memory: %f\n", elapsedTime );
-
+#ifdef USE_TEXTURE_OBJECT
 	// execution of the version using texture memory
 	if ( deviceProp.major >= 3 ) // Texture objects are supported from arch 3.X
 	{
@@ -273,6 +280,7 @@ int main(int argc, char* argv[])
         printf("CUDA Texture Object requires a GPU with compute capability "
                "3.0 or later\n");
 	}
+#endif 
 	// save image
 	cudaMemcpy2D( h_img, width*sizeof(unsigned char), 
 		d_img, pitch*sizeof(unsigned char), width*sizeof(unsigned char), height,
@@ -280,8 +288,10 @@ int main(int argc, char* argv[])
 	sdkSavePGM("./data/blurred_tex.ppm", h_img, width, height );
 
 	// free memory
+#ifdef USE_TEXTURE_OBJECT
 	cudaDestroyTextureObject(texObj);
 	cudaFreeArray(cuArray);
+#endif
 	cudaFree(d_img);
 	cudaProfilerStop();
 	cudaDeviceReset();
